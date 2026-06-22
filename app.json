@@ -11,6 +11,7 @@
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.worktracker.app",
       "supportsTablet": true,
+      "appleTeamId": "FF9XH6B8HS",
       "entitlements": {
         "com.apple.security.application-groups": ["group.com.worktracker.app"]
       }
