@@ -8,7 +8,9 @@
     "scheme": "worktracker",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.worktracker.app",
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
@@ -33,6 +35,12 @@
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 76
           }
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "WorkTracker reads your calendar to count days with your work event and total up your hours."
         }
       ]
     ],

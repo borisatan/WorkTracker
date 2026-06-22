@@ -1,98 +1,167 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { Link, Stack, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { Headline } from '@/components/headline';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { WorkCalendar } from '@/components/work-calendar';
+import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { useWorkData } from '@/hooks/use-work-data';
+import type { Period } from '@/lib/period';
+import { useSettings } from '@/lib/settings';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function formatRange(period: Period): string {
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  const last = new Date(period.end.getTime() - DAY_MS);
+  return `${period.start.toLocaleDateString(undefined, opts)} – ${last.toLocaleDateString(undefined, opts)}`;
+}
+
+function GearButton() {
+  const theme = useTheme();
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <Link href="/settings" asChild>
+      <Pressable hitSlop={12}>
+        <ThemedText style={[styles.gear, { color: theme.accent }]}>⚙︎</ThemedText>
+      </Pressable>
+    </Link>
   );
 }
 
-export default function HomeScreen() {
+export default function DashboardScreen() {
+  const theme = useTheme();
+  const { settings, ready } = useSettings();
+  const { loading, permission, configured, period, stats, error, refresh } = useWorkData(settings, ready);
+
+  // Refetch whenever the dashboard regains focus (e.g. returning from Settings).
+  useFocusEffect(
+    useCallback(() => {
+      if (ready) refresh();
+    }, [ready, refresh]),
+  );
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
+    <ScrollView
+      style={{ backgroundColor: theme.background }}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={theme.accent} />}>
+      <Stack.Screen options={{ headerRight: () => <GearButton /> }} />
+      <SafeAreaView edges={['bottom']}>
+        {!ready ? (
+          <ActivityIndicator style={styles.centered} color={theme.accent} />
+        ) : !configured ? (
+          <EmptyState />
+        ) : !permission ? (
+          <Notice text="Calendar access is off. Enable it in iOS Settings, then pull to refresh." />
+        ) : (
+          <>
+            <Headline stats={stats} />
+            <ThemedText type="small" themeColor="textSecondary" style={styles.caption}>
+              {formatRange(period)}
+              {settings.searchString ? `  ·  “${settings.searchString.trim()}”` : ''}
+            </ThemedText>
+            {error ? <Notice text={error} /> : null}
+            <WorkCalendar period={period} stats={stats} />
+            <View style={styles.legend}>
+              <LegendItem color={theme.workedDay} label="Worked" />
+              <LegendItem color={theme.futureDay} label="Scheduled" />
+            </View>
+          </>
+        )}
       </SafeAreaView>
-    </ThemedView>
+    </ScrollView>
+  );
+}
+
+function EmptyState() {
+  const theme = useTheme();
+  return (
+    <View style={styles.centered}>
+      <ThemedText type="subtitle" style={styles.centerText}>
+        Set up tracking
+      </ThemedText>
+      <ThemedText type="default" themeColor="textSecondary" style={styles.centerText}>
+        Choose a calendar and the event title to look for.
+      </ThemedText>
+      <Link href="/settings" asChild>
+        <Pressable style={StyleSheet.flatten([styles.button, { backgroundColor: theme.accent }])}>
+          <ThemedText style={styles.buttonText}>Open Settings</ThemedText>
+        </Pressable>
+      </Link>
+    </View>
+  );
+}
+
+function Notice({ text }: { text: string }) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.notice, { backgroundColor: theme.backgroundElement }]}>
+      <ThemedText type="small" themeColor="textSecondary">
+        {text}
+      </ThemedText>
+    </View>
+  );
+}
+
+function LegendItem({ color, label }: { color: string; label: string }) {
+  return (
+    <View style={styles.legendItem}>
+      <View style={[styles.legendDot, { backgroundColor: color }]} />
+      <ThemedText type="small" themeColor="textSecondary">
+        {label}
+      </ThemedText>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+  content: {
+    padding: Spacing.three,
+    gap: Spacing.three,
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
+  centered: {
+    paddingTop: Spacing.six,
     alignItems: 'center',
     gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
+  centerText: {
     textAlign: 'center',
   },
-  code: {
-    textTransform: 'uppercase',
+  caption: {
+    textAlign: 'center',
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  gear: {
+    fontSize: 22,
+  },
+  button: {
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
+    borderRadius: Spacing.three,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  notice: {
+    padding: Spacing.three,
+    borderRadius: Spacing.three,
+  },
+  legend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.four,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
 });
