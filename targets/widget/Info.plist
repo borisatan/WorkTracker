@@ -8,8 +8,8 @@
 		<string>com.apple.widgetkit-extension</string>
 	</dict>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Work Tracker reads your calendar to total up the hours you've worked and projected.</string>
+	<string>Cadenza reads your calendar to total up the hours you've worked and projected.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Work Tracker reads your calendar to total up the hours you've worked and projected.</string>
+	<string>Cadenza reads your calendar to total up the hours you've worked and projected.</string>
 </dict>
 </plist>

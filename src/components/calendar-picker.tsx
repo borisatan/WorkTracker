@@ -9,10 +9,11 @@ import { ensureCalendarPermission, listDeviceCalendars, type DeviceCalendar } fr
 type Props = {
   selectedIds: string[];
   onToggle: (id: string) => void;
+  onPermissionChange?: (granted: boolean) => void;
 };
 
 /** Multi-select list of the device's event calendars. */
-export function CalendarPicker({ selectedIds, onToggle }: Props) {
+export function CalendarPicker({ selectedIds, onToggle, onPermissionChange }: Props) {
   const theme = useTheme();
   const [calendars, setCalendars] = useState<DeviceCalendar[] | null>(null);
   const [permission, setPermission] = useState<boolean | null>(null);
@@ -20,8 +21,9 @@ export function CalendarPicker({ selectedIds, onToggle }: Props) {
   const load = useCallback(async () => {
     const granted = await ensureCalendarPermission();
     setPermission(granted);
+    onPermissionChange?.(granted);
     if (granted) setCalendars(await listDeviceCalendars());
-  }, []);
+  }, [onPermissionChange]);
 
   useEffect(() => {
     load();

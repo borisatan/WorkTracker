@@ -137,7 +137,7 @@ struct SmallView: View {
                     .tracking(1.5)
                     .foregroundStyle(.primary)
                 Text(formatHours(summary.workedHours))
-                    .font(.system(size: 40, weight: .heavy, design: .rounded))
+                    .font(.system(size: 64, weight: .heavy, design: .rounded))
                     .foregroundStyle(Color("worked"))
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)

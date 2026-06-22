@@ -60,7 +60,7 @@ export default function SettingsScreen() {
 
   const inputStyle = [
     styles.input,
-    { backgroundColor: theme.backgroundElement, color: theme.text },
+    { backgroundColor: theme.backgroundElement, color: theme.text, borderColor: theme.cardBorder },
   ];
 
   return (
@@ -132,6 +132,14 @@ export default function SettingsScreen() {
               hint="Pick which of your phone's calendars to search for work events. These are the calendars from your Calendar app — like your personal, work, or subscribed calendars.">
               <CalendarPicker selectedIds={settings.calendarIds} onToggle={toggleCalendar} />
             </Field>
+
+            <Pressable
+              style={[styles.onboardingButton, { backgroundColor: theme.backgroundElement, borderColor: theme.cardBorder }]}
+              onPress={() => router.replace('/onboarding')}>
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                Replay onboarding
+              </ThemedText>
+            </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>
       </Animated.View>
@@ -209,6 +217,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
     borderRadius: Spacing.three,
+    borderWidth: StyleSheet.hairlineWidth,
     fontSize: 16,
+  },
+  onboardingButton: {
+    paddingVertical: Spacing.three,
+    borderRadius: Spacing.three,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
   },
 });

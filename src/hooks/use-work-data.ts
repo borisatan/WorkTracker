@@ -49,7 +49,7 @@ export function useWorkData(settings: Settings, settingsReady: boolean) {
   const [state, setState] = useState<WorkDataState>(() => ({
     loading: true,
     permission: true,
-    configured: false,
+    configured: isConfigured(settings),
     period: getPeriod(settings.periodStartDay),
     stats: EMPTY_STATS,
     workedKeys: [],
@@ -57,11 +57,11 @@ export function useWorkData(settings: Settings, settingsReady: boolean) {
     error: null,
   }));
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (silent = false) => {
     const period = getPeriod(settings.periodStartDay);
     const configured = isConfigured(settings);
 
-    setState((prev) => ({ ...prev, loading: true, error: null, period, configured }));
+    setState((prev) => ({ ...prev, ...(silent ? {} : { loading: true }), error: null, period, configured }));
 
     if (!configured) {
       setState((prev) => ({

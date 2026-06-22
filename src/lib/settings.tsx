@@ -26,7 +26,7 @@ export const DEFAULT_SETTINGS: Settings = {
   calendarIds: [],
 };
 
-const STORAGE_KEY = 'worktracker.settings.v1';
+const STORAGE_KEY = 'cadenza.settings.v1';
 
 export async function loadSettings(): Promise<Settings> {
   try {

@@ -9,7 +9,7 @@ import { Platform } from 'react-native';
 import type { Settings } from './settings';
 
 /** Must match the App Group in app.json and targets/widget/expo-target.config.js. */
-const APP_GROUP = 'group.com.worktracker.app';
+const APP_GROUP = 'group.com.borisatanassov.cadenza';
 
 // Lazily required so the app still runs where the native module is absent
 // (Android, web, Expo Go). `ExtensionStorage` is a no-op there.

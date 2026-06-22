@@ -10,45 +10,48 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CalendarPicker } from '@/components/calendar-picker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Fonts, Spacing } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { clampStartDay } from '@/lib/period';
-import { useSettings, type Settings } from '@/lib/settings';
+import { saveSettings, useSettings, type Settings } from '@/lib/settings';
 
-const ONBOARDING_KEY = 'worktracker.onboarding.v1';
+const ONBOARDING_KEY = 'cadenza.onboarding.v1';
+
+const TOTAL_STEPS = 4;
 
 export default function OnboardingScreen() {
   const theme = useTheme();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const router = useRouter();
   const { settings, update } = useSettings();
   const [step, setStep] = useState(0);
   const [keyword, setKeyword] = useState(settings.searchString);
   const [hoursText, setHoursText] = useState(String(settings.hoursPerDay));
   const [startDayText, setStartDayText] = useState(String(settings.periodStartDay));
-
-  const opacity = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const [fieldError, setFieldError] = useState('');
+  // null = not yet resolved, false = denied, true = granted
+  const [calendarPermission, setCalendarPermission] = useState<boolean | null>(null);
 
   const goTo = useCallback(
     (nextStep: number, patch?: Partial<Settings>) => {
       if (patch) update(patch);
-      opacity.value = withTiming(0, { duration: 150 }, () => {
-        runOnJS(setStep)(nextStep);
-        opacity.value = withTiming(1, { duration: 200 });
-      });
+      setFieldError('');
+      setStep(nextStep);
     },
-    [update, opacity],
+    [update],
   );
 
   const toggleCalendar = useCallback(
     (id: string) => {
       const has = settings.calendarIds.includes(id);
+      setFieldError('');
       update({
         calendarIds: has
           ? settings.calendarIds.filter((c) => c !== id)
@@ -59,11 +62,17 @@ export default function OnboardingScreen() {
   );
 
   const finish = useCallback(async () => {
+    await saveSettings(settings);
     await AsyncStorage.setItem(ONBOARDING_KEY, 'done');
     router.replace('/');
-  }, [router]);
+  }, [router, settings]);
 
-  const inputStyle = [styles.input, { backgroundColor: theme.backgroundElement, color: theme.text }];
+  const inputStyle = [
+    styles.input,
+    isDark
+      ? { backgroundColor: theme.background, color: theme.text, borderWidth: 1, borderColor: theme.backgroundSelected }
+      : { backgroundColor: theme.backgroundElement, color: theme.text },
+  ];
 
   const renderContent = () => {
     switch (step) {
@@ -71,7 +80,7 @@ export default function OnboardingScreen() {
         return (
           <View style={styles.splashPage}>
             <View style={styles.splashContent}>
-              <ThemedText style={[styles.appName, { color: theme.accent }]}>WorkTracker</ThemedText>
+              <ThemedText style={[styles.appName, { color: theme.accent }]}>Cadenza</ThemedText>
               <ThemedText style={styles.splashTitle}>
                 Never forget how many hours you've worked this month again.
               </ThemedText>
@@ -89,11 +98,26 @@ export default function OnboardingScreen() {
             step={1}
             title="Which calendars should we check?"
             hint="Pick the calendars where your work shifts or meetings appear."
-            onNext={() => goTo(2)}
+            onNext={() => {
+              if (calendarPermission === null) return;
+              if (!calendarPermission) {
+                setFieldError('Calendar access is required. Enable it in iOS Settings and come back.');
+                return;
+              }
+              if (settings.calendarIds.length === 0) {
+                setFieldError('Please select at least one calendar.');
+                return;
+              }
+              goTo(2);
+            }}
             accent={theme.accent}
             background={theme.background}
-            backgroundSelected={theme.backgroundSelected}>
-            <CalendarPicker selectedIds={settings.calendarIds} onToggle={toggleCalendar} />
+            error={fieldError}>
+            <CalendarPicker
+              selectedIds={settings.calendarIds}
+              onToggle={toggleCalendar}
+              onPermissionChange={setCalendarPermission}
+            />
           </SetupPage>
         );
 
@@ -103,14 +127,20 @@ export default function OnboardingScreen() {
             step={2}
             title="What's your work keyword?"
             hint='Events with this word in the title count as work days — e.g. "Work", "Shift", "Office".'
-            onNext={() => goTo(3, { searchString: keyword.trim() })}
+            onNext={() => {
+              if (keyword.trim().length === 0) {
+                setFieldError('Please enter a keyword to match your work events.');
+                return;
+              }
+              goTo(3, { searchString: keyword.trim() });
+            }}
             accent={theme.accent}
             background={theme.background}
-            backgroundSelected={theme.backgroundSelected}>
+            error={fieldError}>
             <TextInput
               style={inputStyle}
               value={keyword}
-              onChangeText={setKeyword}
+              onChangeText={(t) => { setKeyword(t); setFieldError(''); }}
               placeholder="e.g. Work"
               placeholderTextColor={theme.textSecondary}
               autoCapitalize="none"
@@ -128,15 +158,19 @@ export default function OnboardingScreen() {
             hint="We'll multiply this by your worked days to calculate your total hours."
             onNext={() => {
               const n = parseFloat(hoursText.replace(',', '.'));
-              goTo(4, { hoursPerDay: Number.isFinite(n) && n > 0 ? n : 8 });
+              if (!Number.isFinite(n) || n <= 0) {
+                setFieldError('Please enter a valid number of hours, e.g. 8 or 7.5.');
+                return;
+              }
+              goTo(4, { hoursPerDay: n });
             }}
             accent={theme.accent}
             background={theme.background}
-            backgroundSelected={theme.backgroundSelected}>
+            error={fieldError}>
             <TextInput
               style={inputStyle}
               value={hoursText}
-              onChangeText={setHoursText}
+              onChangeText={(t) => { setHoursText(t); setFieldError(''); }}
               keyboardType="decimal-pad"
               placeholder="8"
               placeholderTextColor={theme.textSecondary}
@@ -153,15 +187,19 @@ export default function OnboardingScreen() {
             hint="Enter the day of the month your period resets — e.g. 1 for the 1st, 15 for the 15th."
             onNext={() => {
               const n = parseInt(startDayText, 10);
-              goTo(5, { periodStartDay: Number.isFinite(n) ? clampStartDay(n) : 1 });
+              if (!Number.isFinite(n) || n < 1 || n > 31) {
+                setFieldError('Please enter a day between 1 and 31.');
+                return;
+              }
+              goTo(5, { periodStartDay: clampStartDay(n) });
             }}
             accent={theme.accent}
             background={theme.background}
-            backgroundSelected={theme.backgroundSelected}>
+            error={fieldError}>
             <TextInput
               style={inputStyle}
               value={startDayText}
-              onChangeText={setStartDayText}
+              onChangeText={(t) => { setStartDayText(t); setFieldError(''); }}
               keyboardType="number-pad"
               placeholder="1"
               placeholderTextColor={theme.textSecondary}
@@ -176,7 +214,7 @@ export default function OnboardingScreen() {
             <View style={styles.splashContent}>
               <ThemedText style={styles.splashTitle}>You're all set!</ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.splashSub}>
-                WorkTracker will now keep an eye on your calendar and track your hours — automatically.
+                Cadenza will now keep an eye on your calendar and track your hours — automatically.
               </ThemedText>
             </View>
             <Cta label="Start Tracking" onPress={finish} accent={theme.accent} />
@@ -188,12 +226,42 @@ export default function OnboardingScreen() {
     }
   };
 
+  const showProgress = step >= 1 && step <= TOTAL_STEPS;
+
   return (
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
-        <Animated.View style={[styles.flex, animStyle]}>{renderContent()}</Animated.View>
+        {showProgress && (
+          <ProgressBar
+            current={step}
+            total={TOTAL_STEPS}
+            accent={theme.accent}
+            backgroundSelected={theme.backgroundSelected}
+          />
+        )}
+        <View style={styles.flex}>{renderContent()}</View>
       </SafeAreaView>
     </ThemedView>
+  );
+}
+
+function ProgressBar({
+  current,
+  total,
+  accent,
+  backgroundSelected,
+}: {
+  current: number;
+  total: number;
+  accent: string;
+  backgroundSelected: string;
+}) {
+  return (
+    <View style={styles.progressContainer}>
+      <View style={[styles.progressTrack, { backgroundColor: backgroundSelected }]}>
+        <View style={[styles.progressFill, { width: `${(current / total) * 100}%`, backgroundColor: accent }]} />
+      </View>
+    </View>
   );
 }
 
@@ -204,7 +272,7 @@ function SetupPage({
   onNext,
   accent,
   background,
-  backgroundSelected,
+  error,
   children,
 }: {
   step: number;
@@ -213,7 +281,7 @@ function SetupPage({
   onNext: () => void;
   accent: string;
   background: string;
-  backgroundSelected: string;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -222,24 +290,14 @@ function SetupPage({
         style={styles.flex}
         contentContainerStyle={styles.setupScroll}
         keyboardShouldPersistTaps="handled">
-        <ThemedText type="small" themeColor="textSecondary" style={styles.stepLabel}>
-          Step {step} of 4
-        </ThemedText>
         <ThemedText style={styles.setupTitle}>{title}</ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.setupHint}>
           {hint}
         </ThemedText>
         <View style={styles.control}>{children}</View>
+        {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
       </ScrollView>
       <View style={[styles.bottomBar, { backgroundColor: background }]}>
-        <View style={styles.dots}>
-          {[1, 2, 3, 4].map((s) => (
-            <View
-              key={s}
-              style={[styles.dot, { backgroundColor: s === step ? accent : backgroundSelected }]}
-            />
-          ))}
-        </View>
         <Cta label="Next" onPress={onNext} accent={accent} />
       </View>
     </KeyboardAvoidingView>
@@ -259,6 +317,24 @@ function Cta({ label, onPress, accent }: { label: string; onPress: () => void; a
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
+
+  // Progress bar
+  progressContainer: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.two,
+    alignItems: 'center',
+  },
+  progressTrack: {
+    width: '30%',
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
 
   // Splash pages (welcome + all set)
   splashPage: {
@@ -293,9 +369,6 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     paddingBottom: 160,
   },
-  stepLabel: {
-    marginBottom: Spacing.two,
-  },
   setupTitle: {
     fontSize: 30,
     fontWeight: '700',
@@ -309,24 +382,17 @@ const styles = StyleSheet.create({
   control: {
     marginTop: Spacing.four,
   },
+  errorText: {
+    marginTop: Spacing.two,
+    fontSize: 13,
+    color: '#e53e3e',
+  },
 
   // Bottom bar for setup pages
   bottomBar: {
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
     paddingBottom: Spacing.three,
-    gap: Spacing.three,
-  },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
   },
 
   // CTA button

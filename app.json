@@ -1,19 +1,24 @@
 {
   "expo": {
-    "name": "WorkTracker",
-    "slug": "WorkTracker",
+    "name": "Cadenza",
+    "slug": "Cadenza",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "worktracker",
+    "scheme": "cadenza",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.worktracker.app",
+      "bundleIdentifier": "com.borisatanassov.cadenza",
       "supportsTablet": true,
       "appleTeamId": "FF9XH6B8HS",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
       "entitlements": {
-        "com.apple.security.application-groups": ["group.com.worktracker.app"]
+        "com.apple.security.application-groups": [
+          "group.com.borisatanassov.cadenza"
+        ]
       }
     },
     "android": {
@@ -23,7 +28,11 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
+      ]
     },
     "web": {
       "output": "static",
@@ -44,7 +53,7 @@
       [
         "expo-calendar",
         {
-          "calendarPermission": "WorkTracker reads your calendar to count days with your work event and total up your hours."
+          "calendarPermission": "Cadenza reads your calendar to count days with your work event and total up your hours."
         }
       ],
       "@bacons/apple-targets"
@@ -52,6 +61,30 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.borisatanassov.cadenza.widget",
+                  "targetName": "CadenzaWidget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.borisatanassov.cadenza"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "27554612-db74-4270-9193-d7f932aee8d8"
+      }
+    },
+    "owner": "boris.atan1"
   }
 }

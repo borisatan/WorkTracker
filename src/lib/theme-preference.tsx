@@ -14,7 +14,7 @@ export type ColorScheme = 'light' | 'dark';
 /** `'system'` follows the OS; otherwise a forced scheme. */
 export type ThemePreference = 'system' | ColorScheme;
 
-const STORAGE_KEY = 'worktracker.theme.v1';
+const STORAGE_KEY = 'cadenza.theme.v1';
 
 type ContextValue = {
   preference: ThemePreference;

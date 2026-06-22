@@ -4,7 +4,7 @@ import Foundation
 /// App Group shared with the React Native app. Must match the identifier in
 /// app.json and expo-target.config.js.
 enum AppGroup {
-    static let identifier = "group.com.worktracker.app"
+    static let identifier = "group.com.borisatanassov.cadenza"
 }
 
 /// Settings mirrored from the RN app's AsyncStorage into the shared App Group.

@@ -28,7 +28,7 @@ function RootNavigator() {
 
   useEffect(() => {
     if (!ready) return;
-    AsyncStorage.getItem('worktracker.onboarding.v1').then((val) => {
+    AsyncStorage.getItem('cadenza.onboarding.v1').then((val) => {
       if (!val) router.replace('/onboarding');
     });
   }, [ready, router]);
@@ -36,14 +36,21 @@ function RootNavigator() {
   return (
     <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="index" options={{ title: 'WorkTracker' }} />
-        <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen
+          name="index"
+          options={{ title: 'Cadenza', presentation: 'card', animation: 'none', gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="onboarding"
+          options={{ headerShown: false, presentation: 'card', animation: 'none', gestureEnabled: false }}
+        />
         <Stack.Screen
           name="settings"
           options={{
             headerShown: false,
             presentation: 'transparentModal',
             animation: 'slide_from_bottom',
+            gestureEnabled: true,
           }}
         />
       </Stack>

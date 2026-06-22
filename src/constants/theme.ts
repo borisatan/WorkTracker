@@ -35,7 +35,7 @@ export const Colors = {
     textSecondary: '#B0B4BA',
     accent: '#4a9eff',
     workedDay: '#34c578',
-    futureDay: '#b3a4ff',
+    futureDay: '#8b7cf6',
     /** Worked/scheduled days outside the active period (de-emphasized). */
     workedDayMuted: '#1f5f3a',
     futureDayMuted: '#473d6e',

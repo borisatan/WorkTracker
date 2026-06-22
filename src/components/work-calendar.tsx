@@ -66,14 +66,17 @@ export function WorkCalendar({
     fill(workedKeys, theme.workedDay, theme.workedDayMuted);
     fill(scheduledKeys, theme.futureDay, theme.futureDayMuted);
 
-    // Today: add an accent ring, preserving any work-day fill underneath.
-    const existing = marks[todayKey]?.customStyles;
-    marks[todayKey] = {
-      customStyles: {
-        container: { ...(existing?.container ?? {}), borderWidth: 2, borderColor: theme.accent, borderRadius: 8 },
-        text: existing?.text ?? { color: theme.accent, fontWeight: '700' },
-      },
-    };
+    // Today: if it has a worked/scheduled fill already, leave it as-is.
+    // Otherwise give it the workedDay fill so it matches other green days.
+    if (!marks[todayKey]?.customStyles?.container?.backgroundColor) {
+      const inToday = inPeriod(todayKey);
+      marks[todayKey] = {
+        customStyles: {
+          container: { backgroundColor: inToday ? theme.workedDay : theme.workedDayMuted, borderRadius: 8 },
+          text: { color: '#ffffff', fontWeight: '700' },
+        },
+      };
+    }
     return marks;
   }, [period, startKey, endKey, workedKeys, scheduledKeys, theme, todayKey]);
 
@@ -95,7 +98,6 @@ export function WorkCalendar({
         monthTextColor: theme.text,
         textSectionTitleColor: theme.textSecondary,
         textDisabledColor: theme.backgroundSelected,
-        todayTextColor: theme.accent,
         arrowColor: theme.accent,
       }}
       style={styles.calendar}

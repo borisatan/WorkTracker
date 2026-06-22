@@ -50,7 +50,7 @@ export default function DashboardScreen() {
   // Refetch whenever the dashboard regains focus (e.g. returning from Settings).
   useFocusEffect(
     useCallback(() => {
-      if (ready) refresh();
+      if (ready) refresh(true);
     }, [ready, refresh]),
   );
 
