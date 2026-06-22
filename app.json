@@ -4,11 +4,11 @@
     "slug": "Cadenza",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./Cadenza_icon.png",
     "scheme": "cadenza",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./Cadenza_icon.png",
       "bundleIdentifier": "com.borisatanassov.cadenza",
       "supportsTablet": true,
       "appleTeamId": "FF9XH6B8HS",

@@ -221,9 +221,9 @@ struct WorkTrackerWidgetEntryView: View {
     private var content: some View {
         switch entry.state {
         case .notConfigured:
-            MessageView(title: "Set up tracking", subtitle: "Open Work Tracker to pick a calendar and event title.")
+            MessageView(title: "Set up tracking", subtitle: "Open Cadenza to pick a calendar and event title.")
         case .noAccess:
-            MessageView(title: "Calendar access off", subtitle: "Enable calendar access for Work Tracker in Settings.")
+            MessageView(title: "Calendar access off", subtitle: "Enable calendar access for Cadenza in Settings.")
         case let .ready(summary, period):
             switch family {
             case .systemSmall:
@@ -242,7 +242,7 @@ struct WorkTrackerWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             WorkTrackerWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Work Tracker")
+        .configurationDisplayName("Cadenza")
         .description("Hours worked and projected for the current period.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
