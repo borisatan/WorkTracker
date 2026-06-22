@@ -89,7 +89,7 @@ struct StatColumn: View {
             Text(label)
                 .font(.system(size: 11, weight: .semibold))
                 .tracking(1.5)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
             Text(formatHours(hours))
                 .font(hoursFont)
                 .foregroundStyle(emphasized ? Color("worked") : Color.primary)
@@ -97,7 +97,7 @@ struct StatColumn: View {
                 .lineLimit(1)
             Text(dayLabel(days))
                 .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
         }
     }
 }
@@ -127,7 +127,7 @@ struct SmallView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(periodLabel(period))
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
 
@@ -135,7 +135,7 @@ struct SmallView: View {
                 Text("WORKED")
                     .font(.system(size: 10, weight: .semibold))
                     .tracking(1.5)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
                 Text(formatHours(summary.workedHours))
                     .font(.system(size: 40, weight: .heavy, design: .rounded))
                     .foregroundStyle(Color("worked"))
@@ -147,7 +147,7 @@ struct SmallView: View {
 
             Text("of \(formatHours(summary.projectedHours))")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -163,7 +163,7 @@ struct MediumView: View {
         VStack(spacing: 8) {
             Text(periodLabel(period))
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: 0) {
@@ -183,19 +183,31 @@ struct MediumView: View {
 
 struct WorkTrackerWidgetEntryView: View {
     @Environment(\.widgetFamily) var family
+    @Environment(\.colorScheme) var systemColorScheme
     var entry: Provider.Entry
+
+    /// The color scheme actually in use: app override if set, otherwise system.
+    private var effectiveScheme: ColorScheme {
+        entry.colorScheme ?? systemColorScheme
+    }
 
     var body: some View {
         themed(
             content
-                .containerBackground(for: .widget) { Color("widgetBackground") }
+                .containerBackground(for: .widget) {
+                    // containerBackground renders in its own context and may not
+                    // inherit the environment override set by themed(), so we
+                    // resolve the effective scheme explicitly here.
+                    effectiveScheme == .dark
+                        ? Color(red: 0.110, green: 0.118, blue: 0.133)
+                        : Color.white
+                }
                 .widgetURL(URL(string: "worktracker://"))
         )
     }
 
-    /// Forces the app's manual light/dark override; no-op (follows the system)
-    /// when none is set. Applying `\.colorScheme` flips the asset-catalog and
-    /// semantic colors used throughout the widget.
+    /// Forces the app's manual light/dark override onto widget content colors;
+    /// no-op when following the system.
     @ViewBuilder
     private func themed(_ view: some View) -> some View {
         if let scheme = entry.colorScheme {
