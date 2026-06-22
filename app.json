@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./Cadenza_icon.png",
+      "buildNumber": "2",
       "bundleIdentifier": "com.borisatanassov.cadenza",
       "supportsTablet": true,
       "appleTeamId": "FF9XH6B8HS",
