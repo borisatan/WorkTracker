@@ -5,7 +5,7 @@
 
 import * as Calendar from 'expo-calendar';
 
-import { toDateKey, type Period } from './period';
+import { toDateKey } from './period';
 
 export type DeviceCalendar = {
   id: string;
@@ -37,20 +37,21 @@ export async function listDeviceCalendars(): Promise<DeviceCalendar[]> {
 }
 
 /**
- * Returns the set of `YYYY-MM-DD` keys for days within `period` that contain at
- * least one event whose title contains `searchString` (case-insensitive). A day
- * with multiple matches still yields a single key.
+ * Returns the set of `YYYY-MM-DD` keys for days between `start` and `end` that
+ * contain at least one event whose title contains `searchString`
+ * (case-insensitive). A day with multiple matches still yields a single key.
  */
 export async function fetchMatchingDayKeys(
   searchString: string,
   calendarIds: string[],
-  period: Period,
+  start: Date,
+  end: Date,
 ): Promise<Set<string>> {
   const keys = new Set<string>();
   const needle = searchString.trim().toLowerCase();
   if (!needle || calendarIds.length === 0) return keys;
 
-  const events = await Calendar.listEvents(calendarIds, period.start, period.end);
+  const events = await Calendar.listEvents(calendarIds, start, end);
   for (const event of events) {
     if (!event.title || !event.title.toLowerCase().includes(needle)) continue;
     const start = event.startDate instanceof Date ? event.startDate : new Date(event.startDate);

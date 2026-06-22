@@ -1,24 +1,18 @@
+import { SymbolView } from 'expo-symbols';
 import { Link, Stack, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Card } from '@/components/card';
 import { Headline } from '@/components/headline';
 import { ThemedText } from '@/components/themed-text';
 import { WorkCalendar } from '@/components/work-calendar';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useWorkData } from '@/hooks/use-work-data';
-import type { Period } from '@/lib/period';
 import { useSettings } from '@/lib/settings';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function formatRange(period: Period): string {
-  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-  const last = new Date(period.end.getTime() - DAY_MS);
-  return `${period.start.toLocaleDateString(undefined, opts)} – ${last.toLocaleDateString(undefined, opts)}`;
-}
+import { useThemePreference } from '@/lib/theme-preference';
 
 function GearButton() {
   const theme = useTheme();
@@ -31,10 +25,27 @@ function GearButton() {
   );
 }
 
+function ThemeToggleButton() {
+  const theme = useTheme();
+  const { scheme, toggle } = useThemePreference();
+  const dark = scheme === 'dark';
+  return (
+    <Pressable hitSlop={12} onPress={toggle} accessibilityLabel="Toggle dark mode">
+      <SymbolView
+        name={dark ? 'sun.max.fill' : 'moon.fill'}
+        size={22}
+        tintColor={theme.accent}
+        fallback={<ThemedText style={[styles.gear, { color: theme.accent }]}>{dark ? '☀︎' : '☾'}</ThemedText>}
+      />
+    </Pressable>
+  );
+}
+
 export default function DashboardScreen() {
   const theme = useTheme();
   const { settings, ready } = useSettings();
-  const { loading, permission, configured, period, stats, error, refresh } = useWorkData(settings, ready);
+  const { loading, permission, configured, period, stats, workedKeys, scheduledKeys, error, refresh } =
+    useWorkData(settings, ready);
 
   // Refetch whenever the dashboard regains focus (e.g. returning from Settings).
   useFocusEffect(
@@ -48,7 +59,9 @@ export default function DashboardScreen() {
       style={{ backgroundColor: theme.background }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={theme.accent} />}>
-      <Stack.Screen options={{ headerRight: () => <GearButton /> }} />
+      <Stack.Screen
+        options={{ headerLeft: () => <ThemeToggleButton />, headerRight: () => <GearButton /> }}
+      />
       <SafeAreaView edges={['bottom']}>
         {!ready ? (
           <ActivityIndicator style={styles.centered} color={theme.accent} />
@@ -58,17 +71,17 @@ export default function DashboardScreen() {
           <Notice text="Calendar access is off. Enable it in iOS Settings, then pull to refresh." />
         ) : (
           <>
-            <Headline stats={stats} />
-            <ThemedText type="small" themeColor="textSecondary" style={styles.caption}>
-              {formatRange(period)}
-              {settings.searchString ? `  ·  “${settings.searchString.trim()}”` : ''}
-            </ThemedText>
+            <Card>
+              <Headline stats={stats} />
+            </Card>
             {error ? <Notice text={error} /> : null}
-            <WorkCalendar period={period} stats={stats} />
-            <View style={styles.legend}>
-              <LegendItem color={theme.workedDay} label="Worked" />
-              <LegendItem color={theme.futureDay} label="Scheduled" />
-            </View>
+            <Card style={styles.calendarCard}>
+              <WorkCalendar period={period} workedKeys={workedKeys} scheduledKeys={scheduledKeys} />
+              <View style={styles.legend}>
+                <LegendItem color={theme.workedDay} label="Worked" />
+                <LegendItem color={theme.futureDay} label="Scheduled" />
+              </View>
+            </Card>
           </>
         )}
       </SafeAreaView>
@@ -96,13 +109,12 @@ function EmptyState() {
 }
 
 function Notice({ text }: { text: string }) {
-  const theme = useTheme();
   return (
-    <View style={[styles.notice, { backgroundColor: theme.backgroundElement }]}>
+    <Card>
       <ThemedText type="small" themeColor="textSecondary">
         {text}
       </ThemedText>
-    </View>
+    </Card>
   );
 }
 
@@ -130,9 +142,6 @@ const styles = StyleSheet.create({
   centerText: {
     textAlign: 'center',
   },
-  caption: {
-    textAlign: 'center',
-  },
   gear: {
     fontSize: 22,
   },
@@ -145,14 +154,16 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '700',
   },
-  notice: {
-    padding: Spacing.three,
-    borderRadius: Spacing.three,
+  calendarCard: {
+    marginTop: Spacing.two,
+    padding: Spacing.two,
+    gap: Spacing.three,
   },
   legend: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: Spacing.four,
+    paddingBottom: Spacing.two,
   },
   legendItem: {
     flexDirection: 'row',

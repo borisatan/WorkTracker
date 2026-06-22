@@ -10,7 +10,10 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.worktracker.app",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.worktracker.app"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -42,7 +45,8 @@
         {
           "calendarPermission": "WorkTracker reads your calendar to count days with your work event and total up your hours."
         }
-      ]
+      ],
+      "@bacons/apple-targets"
     ],
     "experiments": {
       "typedRoutes": true,

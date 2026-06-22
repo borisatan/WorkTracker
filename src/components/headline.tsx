@@ -9,28 +9,43 @@ function dayLabel(n: number): string {
   return n === 1 ? 'day' : 'days';
 }
 
-/** Large centered worked vs projected summary (hours + days). */
+/** Worked vs projected summary (hours + days), shown side by side. */
 export function Headline({ stats }: { stats: WorkStats }) {
   const theme = useTheme();
 
   return (
     <View style={styles.container}>
-      <ThemedText type="small" themeColor="textSecondary" style={styles.label}>
-        WORKED
-      </ThemedText>
-      <ThemedText style={[styles.big, { color: theme.workedDay }]}>{stats.workedHours}h</ThemedText>
-      <ThemedText type="default" themeColor="textSecondary">
-        {stats.workedDays} {dayLabel(stats.workedDays)}
-      </ThemedText>
-
+      <Stat
+        label="WORKED"
+        hours={stats.workedHours}
+        days={stats.workedDays}
+        color={theme.workedDay}
+      />
       <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />
+      <Stat label="PROJECTED" hours={stats.projectedHours} days={stats.projectedDays} />
+    </View>
+  );
+}
 
+function Stat({
+  label,
+  hours,
+  days,
+  color,
+}: {
+  label: string;
+  hours: number;
+  days: number;
+  color?: string;
+}) {
+  return (
+    <View style={styles.stat}>
       <ThemedText type="small" themeColor="textSecondary" style={styles.label}>
-        PROJECTED
+        {label}
       </ThemedText>
-      <ThemedText type="subtitle">{stats.projectedHours}h</ThemedText>
+      <ThemedText style={[styles.big, color ? { color } : null]}>{hours}h</ThemedText>
       <ThemedText type="default" themeColor="textSecondary">
-        {stats.projectedDays} {dayLabel(stats.projectedDays)}
+        {days} {dayLabel(days)}
       </ThemedText>
     </View>
   );
@@ -38,21 +53,26 @@ export function Headline({ stats }: { stats: WorkStats }) {
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.four,
+  },
+  stat: {
+    flex: 1,
     alignItems: 'center',
     gap: Spacing.one,
-    paddingVertical: Spacing.four,
   },
   label: {
     letterSpacing: 2,
   },
   big: {
-    fontSize: 64,
-    lineHeight: 72,
+    fontSize: 44,
+    lineHeight: 50,
     fontWeight: '800',
   },
   divider: {
-    height: 1,
+    width: 1,
     alignSelf: 'stretch',
-    marginVertical: Spacing.three,
+    marginVertical: Spacing.two,
   },
 });

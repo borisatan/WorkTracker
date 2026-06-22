@@ -6,6 +6,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
+import { syncSettingsToWidget } from './widget-sync';
+
 export type Settings = {
   /** Substring matched (case-insensitive) against event titles. */
   searchString: string;
@@ -60,6 +62,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       if (!active) return;
       setSettings(loaded);
       setReady(true);
+      syncSettingsToWidget(loaded);
     });
     return () => {
       active = false;
@@ -70,6 +73,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings((prev) => {
       const next = { ...prev, ...patch };
       saveSettings(next).catch(() => {});
+      syncSettingsToWidget(next);
       return next;
     });
   }, []);
