@@ -4,6 +4,21 @@ import SwiftUI
 struct WorkEntry: TimelineEntry {
     let date: Date
     let state: WidgetState
+    /// The app's in-app light/dark override, mirrored from RN. `nil` follows the
+    /// system appearance (when the app's preference is "system" or unset).
+    var colorScheme: ColorScheme? = nil
+}
+
+/// Reads the app's theme preference from the shared App Group. iOS widgets only
+/// follow the system appearance on their own, so the app mirrors its manual
+/// override here (see syncThemeToWidget in src/lib/widget-sync.ts).
+private func themeOverride() -> ColorScheme? {
+    let defaults = UserDefaults(suiteName: AppGroup.identifier)
+    switch defaults?.string(forKey: "themePreference") {
+    case "light": return .light
+    case "dark": return .dark
+    default: return nil
+    }
 }
 
 struct Provider: TimelineProvider {
@@ -15,14 +30,14 @@ struct Provider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (WorkEntry) -> Void) {
-        completion(WorkEntry(date: Date(), state: WorkData.compute()))
+        completion(WorkEntry(date: Date(), state: WorkData.compute(), colorScheme: themeOverride()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WorkEntry>) -> Void) {
         let now = Date()
-        let entry = WorkEntry(date: now, state: WorkData.compute(now: now))
+        let entry = WorkEntry(date: now, state: WorkData.compute(now: now), colorScheme: themeOverride())
         // The numbers change at most daily; refresh hourly. The app also pushes
-        // an immediate reload when settings change.
+        // an immediate reload when settings or the theme change.
         let next = Calendar.current.date(byAdding: .hour, value: 1, to: now) ?? now.addingTimeInterval(3600)
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
@@ -126,14 +141,11 @@ struct SmallView: View {
                     .foregroundStyle(Color("worked"))
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
-                Text(dayLabel(summary.workedDays))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
             }
 
             Spacer(minLength: 0)
 
-            Text("of \(formatHours(summary.projectedHours)) · \(dayLabel(summary.projectedDays))")
+            Text("of \(formatHours(summary.projectedHours))")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -174,9 +186,23 @@ struct WorkTrackerWidgetEntryView: View {
     var entry: Provider.Entry
 
     var body: some View {
-        content
-            .containerBackground(for: .widget) { Color(uiColor: .systemBackground) }
-            .widgetURL(URL(string: "worktracker://"))
+        themed(
+            content
+                .containerBackground(for: .widget) { Color("widgetBackground") }
+                .widgetURL(URL(string: "worktracker://"))
+        )
+    }
+
+    /// Forces the app's manual light/dark override; no-op (follows the system)
+    /// when none is set. Applying `\.colorScheme` flips the asset-catalog and
+    /// semantic colors used throughout the widget.
+    @ViewBuilder
+    private func themed(_ view: some View) -> some View {
+        if let scheme = entry.colorScheme {
+            view.environment(\.colorScheme, scheme)
+        } else {
+            view
+        }
     }
 
     @ViewBuilder

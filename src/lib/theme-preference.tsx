@@ -8,6 +8,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useColorScheme as useSystemColorScheme } from 'react-native';
 
+import { syncThemeToWidget } from './widget-sync';
+
 export type ColorScheme = 'light' | 'dark';
 /** `'system'` follows the OS; otherwise a forced scheme. */
 export type ThemePreference = 'system' | ColorScheme;
@@ -33,7 +35,9 @@ export function ThemePreferenceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => {
+        const stored = raw === 'light' || raw === 'dark' || raw === 'system' ? raw : 'system';
         if (raw === 'light' || raw === 'dark' || raw === 'system') setPreferenceState(raw);
+        syncThemeToWidget(stored);
       })
       .catch(() => {});
   }, []);
@@ -41,6 +45,7 @@ export function ThemePreferenceProvider({ children }: { children: ReactNode }) {
   const setPreference = useCallback((p: ThemePreference) => {
     setPreferenceState(p);
     AsyncStorage.setItem(STORAGE_KEY, p).catch(() => {});
+    syncThemeToWidget(p);
   }, []);
 
   const scheme: ColorScheme = preference === 'system' ? systemScheme : preference;

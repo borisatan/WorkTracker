@@ -35,10 +35,32 @@ export function syncSettingsToWidget(settings: Settings): void {
   if (!storage) return;
   try {
     storage.set('searchString', settings.searchString);
-    storage.set('calendarIds', settings.calendarIds);
+    // Stored as a JSON string, not a raw array: the native `setArray` bridge
+    // expects an array of dictionaries and persists as opaque JSON Data, which
+    // the widget can't read back via `array(forKey:)`. A string round-trips
+    // reliably. Decoded by `WorkSettings.load()` in targets/widget/WorkData.swift.
+    storage.set('calendarIds', JSON.stringify(settings.calendarIds));
     // Stored as a string so fractional hours survive (UserDefaults int would truncate).
     storage.set('hoursPerDay', String(settings.hoursPerDay));
     storage.set('periodStartDay', settings.periodStartDay);
+    const { ExtensionStorage } = require('@bacons/apple-targets');
+    ExtensionStorage.reloadWidget();
+  } catch {
+    // Ignore — widget sync is non-critical.
+  }
+}
+
+/**
+ * Mirrors the app's theme preference to the App Group so the widget can match a
+ * manual light/dark override. iOS widgets otherwise only follow the system
+ * appearance. Read by `themeOverride()` in targets/widget/WorkTrackerWidget.swift;
+ * 'system' (or absent) means follow the system.
+ */
+export function syncThemeToWidget(preference: 'system' | 'light' | 'dark'): void {
+  const storage = getStorage();
+  if (!storage) return;
+  try {
+    storage.set('themePreference', preference);
     const { ExtensionStorage } = require('@bacons/apple-targets');
     ExtensionStorage.reloadWidget();
   } catch {

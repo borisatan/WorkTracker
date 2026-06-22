@@ -18,7 +18,9 @@ struct WorkSettings {
     static func load() -> WorkSettings {
         let defaults = UserDefaults(suiteName: AppGroup.identifier)
         let search = defaults?.string(forKey: "searchString") ?? ""
-        let ids = defaults?.array(forKey: "calendarIds") as? [String] ?? []
+        // calendarIds is written as a JSON string by src/lib/widget-sync.ts.
+        let idsJSON = defaults?.string(forKey: "calendarIds") ?? "[]"
+        let ids = (try? JSONSerialization.jsonObject(with: Data(idsJSON.utf8))) as? [String] ?? []
         // hoursPerDay is stored as a string so fractional values survive.
         let hours = Double(defaults?.string(forKey: "hoursPerDay") ?? "") ?? 8
         let rawStartDay = defaults?.integer(forKey: "periodStartDay") ?? 0

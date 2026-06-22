@@ -17,5 +17,9 @@ module.exports = {
   colors: {
     worked: { light: "#1f9d55", dark: "#34c578" },
     accent: { light: "#208AEF", dark: "#4a9eff" },
+    // Card surface, mirrors `card` in src/constants/theme.ts. Resolved via the
+    // (possibly forced) SwiftUI colorScheme so the widget can match the app's
+    // manual dark-mode override, not just the system appearance.
+    widgetBackground: { light: "#FFFFFF", dark: "#1C1E22" },
   },
 };
